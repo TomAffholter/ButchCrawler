@@ -1,0 +1,91 @@
+<Window x:Class="ButchCrawler.Operator.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="History's Web Crawler · Crawl workspace" WindowStartupLocation="CenterScreen" Height="850" Width="1240" MinHeight="730" MinWidth="980">
+<Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Theme.xaml"/></ResourceDictionary.MergedDictionaries>
+<Style x:Key="Card" TargetType="Border"><Setter Property="Background" Value="#F2FFF9EF"/><Setter Property="CornerRadius" Value="8"/><Setter Property="BorderBrush" Value="#A6D9B57F"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="14,8"/><Setter Property="Margin" Value="0,0,10,7"/></Style>
+<Style x:Key="Number" TargetType="TextBlock"><Setter Property="FontSize" Value="22"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,2,0,0"/></Style>
+<Style x:Key="Label" TargetType="TextBlock"><Setter Property="Foreground" Value="#5C6C82"/><Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="Medium"/></Style>
+<Style x:Key="MenuIcon" TargetType="Path">
+    <Setter Property="Width" Value="18"/><Setter Property="Height" Value="18"/>
+    <Setter Property="Stretch" Value="Uniform"/><Setter Property="Stroke" Value="#087F8C"/>
+    <Setter Property="StrokeThickness" Value="1.5"/><Setter Property="StrokeStartLineCap" Value="Round"/><Setter Property="StrokeEndLineCap" Value="Round"/>
+    <Setter Property="IsHitTestVisible" Value="False"/>
+    <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.35"/></Trigger></Style.Triggers>
+</Style>
+</ResourceDictionary></Window.Resources>
+<Grid Background="#171E20">
+<Image Source="/ButchCrawler.Operator;component/Assets/western-about-collage.png" Stretch="UniformToFill" IsHitTestVisible="False"/>
+<Rectangle IsHitTestVisible="False"><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#E0101B20" Offset="0"/><GradientStop Color="#70101B20" Offset="0.65"/><GradientStop Color="#B0131A1C" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+<DockPanel Margin="24">
+<StackPanel DockPanel.Dock="Top">
+<Grid Margin="0,0,0,22"><StackPanel><TextBlock Text="HISTORY RESEARCH" FontSize="12" FontWeight="Bold" Foreground="#E5BC7D"/><TextBlock Text="History's Web Crawler" FontFamily="Georgia" FontSize="34" Foreground="#FFF3DA" Margin="0,4,0,3"/><TextBlock Text="Discover sources. Track retrievals. Follow the evidence." Foreground="#E6DBC7"/></StackPanel><Border Name="CrawlerStatusBadge" HorizontalAlignment="Right" VerticalAlignment="Center" Background="#FFF0F0" BorderBrush="#E69C9C" BorderThickness="1" CornerRadius="16" Padding="18,12"><TextBlock Name="StatusText" Text="Crawler stopped" FontSize="20" FontWeight="Bold" Foreground="#B4232D"/></Border></Grid>
+<WrapPanel Margin="0,0,0,8">
+<Button Name="StartButton" Content="▶  Start crawler" Style="{StaticResource PrimaryButton}" FontSize="16" Padding="16,10" Margin="0,0,8,8" Click="Start_Click"/>
+<Button Name="StopButton" Content="■  Stop" FontSize="16" Padding="16,10" Margin="0,0,20,8" Click="Stop_Click" IsEnabled="False"/>
+<Button Content="Search collection…" FontSize="16" Padding="16,10" Margin="0,0,12,8" Click="CollectionSearch_Click" ToolTip="Search saved information without using OpenAI credits."/>
+<Button Name="SettingsMenu" Content="Settings ▼" FontSize="16" Padding="16,10" Margin="0,0,0,8" Click="SettingsMenu_Click">
+    <Button.ContextMenu>
+    <ContextMenu FontSize="16" Placement="Bottom">
+        <ContextMenu.Resources><Style TargetType="MenuItem"><Setter Property="FontSize" Value="16"/><Setter Property="Padding" Value="13,10"/></Style></ContextMenu.Resources>
+        <MenuItem Header="Application settings…" Click="Config_Click">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M1,3 H15 M1,8 H15 M1,13 H15 M5,1 V5 M11,6 V10 M6,11 V15"/></MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Name="SeedUrlsMenuItem" Header="Seed URLs…" Click="SeedUrls_Click">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M6,10 L10,6 M5,7 L3,9 C1,11 1,13 3,14 C5,15 7,14 8,12 L9,11 M7,5 L8,4 C10,2 12,1 14,3 C16,5 14,7 13,8 L11,10"/></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Name="ProblemSeedsMenuItem" Header="Problem seeds…" Click="ProblemSeeds_Click">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M8,1 L15,14 H1 Z M8,5 V9 M8,12 V12.2"/></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Name="HistoricalNewspapersMenuItem" Header="Historical newspaper archives…" Click="HistoricalNewspapers_Click">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M2,2 H14 V14 H2 Z M5,5 H11 M5,8 H11 M5,11 H9"/></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Name="KeywordsMenuItem" Header="Seed keywords…" Click="Keywords_Click">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M1,1 H8 L15,8 L8,15 L1,8 Z M5,4 A1,1 0 1 0 5,6 A1,1 0 1 0 5,4"/></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="OpenAI key…" Click="OpenAiKey_Click">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M8,6 A3,3 0 1 1 2,6 A3,3 0 1 1 8,6 Z M8,6 H16 M12,6 V10 M15,6 V9"/></MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="Log files…" Click="Logs_Click">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M3,1 H10 L14,5 V15 H3 Z M10,1 V5 H14 M5,8 H12 M5,11 H12"/></MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Name="ExitMenuItem" Header="E_xit" Click="Exit_Click" InputGestureText="Alt+F4">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M7,1 H2 V15 H7 M6,8 H16 M12,4 L16,8 L12,12"/></MenuItem.Icon>
+        </MenuItem>
+    </ContextMenu>
+    </Button.ContextMenu>
+</Button>
+<Button Content="About" FontSize="16" Padding="16,10" Margin="10,0,0,8" Click="About_Click"/>
+</WrapPanel>
+<Border Name="BillingNotice" Visibility="Collapsed" Background="#FFF1DA" BorderBrush="#D59A35" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+<DockPanel><Button DockPanel.Dock="Right" Content="Open API billing…" Click="Billing_Click" Margin="12,0,0,0"/><TextBlock Name="BillingNoticeText" TextWrapping="Wrap" Foreground="#704514" VerticalAlignment="Center"/></DockPanel>
+</Border>
+<UniformGrid Columns="4" Margin="0,0,-10,0">
+<Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="URLs started" Style="{StaticResource Label}"/><TextBlock Name="UrlCountText" Text="0" Style="{StaticResource Number}"/></StackPanel></Border>
+<Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="HTTP responses" Style="{StaticResource Label}"/><TextBlock Name="CompletedCountText" Text="0" Style="{StaticResource Number}"/></StackPanel></Border>
+<Border Style="{StaticResource Card}" BorderBrush="#A8D8BF"><StackPanel><TextBlock Text="Pages retrieved successfully" Style="{StaticResource Label}"/><TextBlock Name="RetrievedPagesText" Text="0" Foreground="#137A43" Style="{StaticResource Number}"/></StackPanel></Border>
+<Border Style="{StaticResource Card}" ToolTip="Failed crawl attempts, including processing failures. A retried URL may later succeed."><StackPanel><TextBlock Text="Failed attempts" Style="{StaticResource Label}"/><TextBlock Name="FailedCountText" Text="0" Foreground="#BE3040" Style="{StaticResource Number}"/></StackPanel></Border>
+<Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="Links queued" Style="{StaticResource Label}"/><TextBlock Name="LinkCountText" Text="0" Foreground="#087F8C" Style="{StaticResource Number}"/></StackPanel></Border>
+<Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="Keyword match events" Style="{StaticResource Label}"/><TextBlock Name="MatchCountText" Text="0" Foreground="#7C3EAD" Style="{StaticResource Number}"/></StackPanel></Border>
+<Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="Retries scheduled" Style="{StaticResource Label}"/><TextBlock Name="RetryCountText" Text="0" Foreground="#A65306" Style="{StaticResource Number}"/></StackPanel></Border>
+<Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="Processing errors" Style="{StaticResource Label}"/><TextBlock Name="ErrorCountText" Text="0" Foreground="#8B2635" Style="{StaticResource Number}"/></StackPanel></Border>
+</UniformGrid>
+<Border Background="#F2FFF9EF" BorderBrush="#A8D8BF" BorderThickness="1" CornerRadius="8" Padding="14,9" Margin="0,0,0,10" ToolTip="Processed active root seeds include successful seeds and final problem/dead-letter seeds.">
+<DockPanel><TextBlock Text="Seed URLs" Foreground="#5C6C82" FontSize="15" FontWeight="Medium" VerticalAlignment="Center"/><WrapPanel HorizontalAlignment="Right"><TextBlock Name="SeedProgressText" Text="— of — Processed" FontSize="18" FontWeight="SemiBold" Foreground="#137A43"/><TextBlock Name="SeedSuccessfulText" Margin="18,0,0,0" FontSize="18" FontWeight="SemiBold" Foreground="#171E20"/><TextBlock Name="SeedAttentionText" Margin="14,0,0,0" FontSize="18" FontWeight="SemiBold" Foreground="#BE3040"/><TextBlock Name="DiscoveredUrlsText" Margin="18,0,0,0" FontSize="18" FontWeight="SemiBold" Foreground="#087F8C" Text="Discovered URLs —" ToolTip="Unique non-seed URLs saved in the database. Refreshed when the app opens and after a crawl stops."/><TextBlock Name="LocalFileProgressText" Margin="18,0,0,0" FontSize="18" FontWeight="SemiBold" Foreground="#245FA8" Text="Local files — of —"/></WrapPanel></DockPanel>
+</Border>
+<Border Background="#EEF5FB" BorderBrush="#A9C5DF" BorderThickness="1" CornerRadius="8" Padding="14,8" Margin="0,0,0,10" ToolTip="Successfully processed source types during this crawler run.">
+<DockPanel><TextBlock Text="Processed types" Foreground="#5C6C82" FontSize="15" FontWeight="Medium" VerticalAlignment="Center"/><TextBlock Name="ProcessedTypesText" Text="None yet" Margin="18,0,0,0" FontSize="16" FontWeight="SemiBold" Foreground="#314E69" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/></DockPanel>
+</Border>
+<Border Background="#E8EEF6" CornerRadius="6" Padding="12,9" Margin="0,4,0,14"><TextBlock Name="CurrentUrlText" Text="Current URL: —" TextTrimming="CharacterEllipsis" ToolTip="Latest URL started; several URLs may be processing concurrently." Foreground="#42566E"/></Border>
+</StackPanel>
+<DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
+<Button DockPanel.Dock="Right" Content="Exit" Click="Exit_Click" Padding="16,8" ToolTip="Close the crawler window"/>
+<TextBlock Text="Cards and processed-type counts reflect this run. Seed, discovered URL, and local-file figures show saved progress. Select log text to copy." Foreground="#E6DBC7" FontSize="11" VerticalAlignment="Center" TextWrapping="Wrap"/>
+</DockPanel>
+<Border Background="White" BorderBrush="#DCE4EF" BorderThickness="1" CornerRadius="8" Padding="8"><DockPanel>
+<WrapPanel DockPanel.Dock="Bottom" Margin="10,9,10,5">
+<TextBlock Text="● Retrieved / completed   " Foreground="#137A43" FontSize="11"/><TextBlock Text="● Fetching   " Foreground="#245FA8" FontSize="11"/><TextBlock Text="● Discovery   " Foreground="#087F8C" FontSize="11"/><TextBlock Text="● Matches   " Foreground="#7C3EAD" FontSize="11"/><TextBlock Text="● Retry   " Foreground="#A65306" FontSize="11"/><TextBlock Text="● Failed / dead-letter   " Foreground="#BE3040" FontSize="11"/><TextBlock Text="● Blocked   " Foreground="#8B571E" FontSize="11"/><TextBlock Text="● CAPTCHA   " Foreground="#A02787" FontSize="11"/><TextBlock Text="● Skipped   " Foreground="#66758A" FontSize="11"/><TextBlock Text="● Processing error" Foreground="#8B2635" FontSize="11"/>
+</WrapPanel>
+<TabControl><TabItem Header="URL activity"><RichTextBox Name="UrlOutputText" IsReadOnly="True" IsDocumentEnabled="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/></TabItem><TabItem Header="Keyword matches"><RichTextBox Name="KeywordOutputText" IsReadOnly="True" IsDocumentEnabled="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/></TabItem><TabItem Header="All activity"><RichTextBox Name="OutputText" IsReadOnly="True" IsDocumentEnabled="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/></TabItem></TabControl>
+</DockPanel></Border>
+</DockPanel></Grid></Window>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MimeKit" Version="4.18.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../ButchCrawler.Operator/ButchCrawler.Operator.csproj" />
+  </ItemGroup>
+</Project>

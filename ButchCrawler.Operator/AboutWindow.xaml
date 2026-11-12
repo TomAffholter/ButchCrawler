@@ -1,0 +1,85 @@
+<Window x:Class="ButchCrawler.Operator.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About History's Web Crawler" Width="1060" Height="710"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner" Background="#171E20">
+    <Grid>
+        <Image Source="/ButchCrawler.Operator;component/Assets/western-about-collage.png" Stretch="UniformToFill"/>
+        <Rectangle IsHitTestVisible="False">
+            <Rectangle.Fill><LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                <GradientStop Color="#B7101B20" Offset="0"/>
+                <GradientStop Color="#75101B20" Offset="0.48"/>
+                <GradientStop Color="#10101B20" Offset="1"/>
+            </LinearGradientBrush></Rectangle.Fill>
+        </Rectangle>
+        <Rectangle IsHitTestVisible="False">
+            <Rectangle.Fill><LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                <GradientStop Color="#00131A1C" Offset="0.5"/>
+                <GradientStop Color="#E6131A1C" Offset="1"/>
+            </LinearGradientBrush></Rectangle.Fill>
+        </Rectangle>
+        <Grid Margin="44,36,44,28">
+            <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <StackPanel HorizontalAlignment="Left" Width="470">
+                <TextBlock Text="HISTORY  /  SOURCES  /  DISCOVERY" FontSize="11" FontWeight="SemiBold" Foreground="#E5BC7D" Margin="0,0,0,22"/>
+                <Border Width="48" Height="3" Background="#E5BC7D" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+                <TextBlock Text="History's&#10;Web Crawler" FontFamily="Georgia" FontSize="49" Foreground="#FFF3DA" LineHeight="58" LineStackingStrategy="BlockLineHeight"/>
+                <TextBlock Text="Discover the past. Follow the sources." FontSize="15" Foreground="#E6DBC7" Margin="0,18,0,26"/>
+                <TextBlock Text="CREATED BY" FontSize="10" FontWeight="SemiBold" Foreground="#D9B57F" Margin="0,0,0,7"/>
+                <TextBlock Text="Tom Affholter" FontSize="23" FontWeight="SemiBold" Foreground="#FFF3DA" Margin="0,0,0,10"/>
+                <TextBlock FontSize="14">
+                    <Hyperlink Name="EmailLink" NavigateUri="mailto:TomAffholter@outlook.com" Foreground="#F3CC91" RequestNavigate="Email_RequestNavigate" ToolTip="Open your email application">TomAffholter@outlook.com</Hyperlink>
+                </TextBlock>
+                <UniformGrid Columns="3" Width="470" Margin="0,25,0,0">
+                    <Border Background="#A6202B30" BorderBrush="#55D9B57F" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,8,0">
+                        <StackPanel><TextBlock Text="Seed Keywords" FontSize="10.5" Foreground="#D5C9B5"/><TextBlock Name="SeedKeywordCountText" Text="…" FontSize="24" FontWeight="SemiBold" Foreground="#FFF3DA" Margin="0,5,0,0"/></StackPanel>
+                    </Border>
+                    <Border Background="#A6202B30" BorderBrush="#55D9B57F" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,8,0">
+                        <StackPanel><TextBlock Text="Seed URLs" FontSize="10.5" Foreground="#D5C9B5"/><TextBlock Name="SeedUrlCountText" Text="…" FontSize="24" FontWeight="SemiBold" Foreground="#FFF3DA" Margin="0,5,0,0"/></StackPanel>
+                    </Border>
+                    <Border Background="#A6202B30" BorderBrush="#55D9B57F" BorderThickness="1" CornerRadius="6" Padding="12,10"
+                            ToolTip="Distinct non-seed URLs discovered through parent links or crawl depth, across all queue statuses since the last data reset. A URL discovered by several seeds counts once.">
+                        <StackPanel><TextBlock Text="New discovered URLs" FontSize="10.5" Foreground="#D5C9B5"/><TextBlock Name="DiscoveredUrlCountText" Text="…" FontSize="24" FontWeight="SemiBold" Foreground="#FFF3DA" Margin="0,5,0,0"/></StackPanel>
+                    </Border>
+                </UniformGrid>
+                <ProgressBar Name="CountsLoadingBar" IsIndeterminate="True" Height="4" Margin="0,10,0,0"
+                             Foreground="#E8C38A" Background="#70202B30" AutomationProperties.Name="Loading database totals"/>
+                <DockPanel Margin="0,8,0,0">
+                    <Button Name="RefreshCountsButton" DockPanel.Dock="Right" Content="Refresh" MinHeight="24" Padding="7,2" FontSize="10"
+                            Background="#70202B30" Foreground="#F3CC91" BorderBrush="#55D9B57F" Click="RefreshCounts_Click"/>
+                    <TextBlock Name="CountsStatusText" Text="Loading… Retrieving database totals." FontSize="12" Foreground="#F3CC91" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                </DockPanel>
+            </StackPanel>
+            <Border Width="340" HorizontalAlignment="Right" VerticalAlignment="Top" Background="#ED172126" BorderBrush="#80D9B57F" BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,12,0,0">
+                <ScrollViewer MaxHeight="470" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <TextBlock Text="AI credits &amp; account" FontSize="21" FontWeight="SemiBold" Foreground="#FFF3DA" Margin="0,0,0,12"/>
+                    <TextBlock Text="This app uses OpenAI API credits. ChatGPT / Codex credits are managed separately." TextWrapping="Wrap" Foreground="#E6DBC7" FontSize="12" Margin="0,0,0,12"/>
+                    <TextBlock Text="AVAILABLE API CREDITS" FontSize="10" FontWeight="SemiBold" Foreground="#D9B57F"/>
+                    <TextBlock Text="View in your account" FontSize="17" Foreground="#FFF3DA" Margin="0,5,0,8"/>
+                    <TextBlock Text="The app cannot read a live prepaid balance with its normal API key. Sign in to the account and organization that owns your key." FontSize="12" Foreground="#E6DBC7" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                    <TextBlock Margin="0,0,0,9"><Hyperlink NavigateUri="https://platform.openai.com/settings/organization/billing" Foreground="#F3CC91" RequestNavigate="Account_RequestNavigate">View balance / add API credits ↗</Hyperlink></TextBlock>
+                    <TextBlock Margin="0,0,0,9"><Hyperlink NavigateUri="https://platform.openai.com/settings/organization/usage" Foreground="#F3CC91" RequestNavigate="Account_RequestNavigate">View API usage ↗</Hyperlink></TextBlock>
+                    <TextBlock Margin="0,0,0,13"><Hyperlink NavigateUri="https://platform.openai.com/settings/organization/limits" Foreground="#F3CC91" RequestNavigate="Account_RequestNavigate">Manage limits and spend alerts ↗</Hyperlink></TextBlock>
+                    <TextBlock Text="To get an early warning, configure account spend alerts. For prepaid accounts, review auto-recharge settings in billing. This app cannot detect a low balance in advance." TextWrapping="Wrap" FontSize="12" Foreground="#E6DBC7" Margin="0,0,0,12"/>
+                    <TextBlock Name="AiBillingStatusText" TextWrapping="Wrap" FontSize="11" Foreground="#FFF3DA" MaxHeight="145" TextTrimming="CharacterEllipsis"/>
+                    <Button Content="Refresh local status" Click="RefreshBilling_Click" HorizontalAlignment="Left" Margin="0,10,0,12" Padding="8,4" Background="#70202B30" Foreground="#F3CC91" BorderBrush="#55D9B57F"/>
+                    <TextBlock><Hyperlink NavigateUri="https://chatgpt.com/settings/usage" Foreground="#F3CC91" RequestNavigate="Account_RequestNavigate">ChatGPT / Codex usage and credits ↗</Hyperlink></TextBlock>
+                </StackPanel>
+                </ScrollViewer>
+            </Border>
+            <Border Grid.Row="1" BorderBrush="#55D9B57F" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Name="VersionText" FontSize="13" FontWeight="SemiBold" Foreground="#FFF3DA"/>
+                        <TextBlock Name="CompiledText" FontSize="12" Foreground="#D5C9B5" Margin="0,7,0,0"/>
+                    </StackPanel>
+                    <Button Name="ExitButton" Grid.Column="1" Content="Exit" Width="110" Padding="16,10" VerticalAlignment="Center"
+                            Background="#E8C38A" BorderBrush="#E8C38A" Foreground="#202B30"
+                            IsCancel="True" Click="Exit_Click" ToolTip="Close the About window (Esc)"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

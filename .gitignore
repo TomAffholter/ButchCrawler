@@ -1,0 +1,50 @@
+# Ignore user-specific appsettings
+ButchCrawler.App/appsettings.Development.json
+
+# Visual Studio
+.vs/
+
+# Visual Studio user files
+*.user
+*.suo
+*.tmp
+
+# Build outputs
+bin/
+obj/
+logs/
+Tests/work/
+
+# Rider
+.idea/
+
+# secrets and env files
+.env
+*.secrets.json
+appsettings.*.Secrets.json
+secrets.json
+*.pem
+*.pfx
+*.key
+
+## Generated content
+output/
+tmp/
+brochure_work/
+manual_work/
+
+# SQL backups
+*.bak
+
+# SQL data files
+*.mdf
+*.ldf
+
+# NuGet packages (if you're using older package management)
+packages/
+
+# Per-user encrypted credentials
+*.dpapi
+
+Tests/ui-preview-loading/
+Tests/ui-preview-types/
