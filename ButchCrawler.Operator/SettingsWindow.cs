@@ -37,7 +37,6 @@ public sealed class SettingsWindow : Window
         save.Click += (_, _) => Close(); buttons.Children.Add(save);
         var cancel = new Button { Content = "Close without saving", Padding = new Thickness(12, 7, 12, 7), Margin = new Thickness(10, 0, 0, 0) };
         cancel.Click += (_, _) => { _discard = true; Close(); }; buttons.Children.Add(cancel);
-        var resets = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         bottom.Children.Add(new Separator { Margin = new Thickness(0, 16, 0, 0) });
         bottom.Children.Add(new TextBlock { Text = "Crawl starting point", FontSize = 17, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 10, 0, 0) });
         bottom.Children.Add(new TextBlock { Text = "Schedule every active seed URL from the beginning again. Previously captured pages, research, matches, documents, and discovered URLs are kept.", Foreground = (System.Windows.Media.Brush)FindResource("MutedBrush"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 6) });
@@ -47,19 +46,6 @@ public sealed class SettingsWindow : Window
             IsEnabled = !_crawlerRunning(), ToolTip = "Stop the crawler first. You will be asked to confirm." };
         restartSeeds.Click += async (_, _) => await RestartSeedsAsync(restartSeeds);
         bottom.Children.Add(restartSeeds);
-        bottom.Children.Add(new Separator { Margin = new Thickness(0, 16, 0, 0) });
-        bottom.Children.Add(new TextBlock { Text = "Database reset", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 0) });
-        bottom.Children.Add(new TextBlock { Text = "Clears database data using the saved connection. JSON settings and your OpenAI key are kept.", Foreground = (System.Windows.Media.Brush)FindResource("MutedBrush"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
-        bottom.Children.Add(resets);
-        foreach (var clearKeywords in new[] { false, true })
-        {
-            var reset = new Button { Content = clearKeywords ? "Reset data + keywords" : "Reset data · keep seeds",
-                Padding = new Thickness(12, 7, 12, 7), Margin = new Thickness(0, 0, 10, 6),
-                IsEnabled = !_crawlerRunning(), ToolTip = "Stop the crawler first. A separate warning and confirmation appear before any deletion." };
-            if (clearKeywords) reset.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(139, 38, 53));
-            reset.Click += (_, _) => OpenReset(clearKeywords);
-            resets.Children.Add(reset);
-        }
         _grid.Columns.Add(new DataGridTextColumn { Header = "Property", MinWidth = 300, IsReadOnly = true, Binding = new Binding(nameof(SettingRow.Property)), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         _grid.Columns.Add(new DataGridTextColumn { Header = "Value", MinWidth = 280, Binding = new Binding(nameof(SettingRow.Value)) { UpdateSourceTrigger = UpdateSourceTrigger.LostFocus }, Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         _grid.ItemsSource = _repository.Rows;
@@ -109,22 +95,4 @@ public sealed class SettingsWindow : Window
         finally { button.IsEnabled = !_crawlerRunning(); }
     }
 
-    private void OpenReset(bool clearKeywords)
-    {
-        if (_crawlerRunning()) { _status.Text = "Stop the crawler before resetting data."; return; }
-        try
-        {
-            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
-            var config = new ConfigurationBuilder().SetBasePath(Path.GetDirectoryName(_path)!)
-                .AddJsonFile(Path.GetFileName(_path)).AddJsonFile($"appsettings.{environment}.json", optional: true)
-                .AddEnvironmentVariables().Build();
-            try
-            {
-                var connection = config.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Missing database connection.");
-                new DatabaseResetWindow(new DatabaseResetService(connection), clearKeywords, _crawlerRunning) { Owner = this }.ShowDialog();
-            }
-            finally { (config as IDisposable)?.Dispose(); }
-        }
-        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Database reset"); }
-    }
 }

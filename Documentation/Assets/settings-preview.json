@@ -1,0 +1,1 @@
+{"Crawler":{"MaxPages":1000,"MaxDepth":2,"AllowPdf":false,"UserAgent":"ButchCrawler/1.0"},"LocalCrawler":{"RootPath":"D:\\HistoryResearch","Extensions":[".pdf",".docx",".txt"]},"Indexer":{"Enabled":false,"MaxConcurrency":1},"OpenAI":{"EncryptedApiKey":"hidden-preview-value"}}

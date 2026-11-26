@@ -76,8 +76,60 @@ if (args.FirstOrDefault() == "--historical-newspaper-tests")
     Console.WriteLine($"All {count} historical newspaper checks passed.");
     return;
 }
+if (args.FirstOrDefault() == "--starter-tests")
+{
+    var count = 0;
+    StarterDatabaseTests.Run((condition, name) => { if (!condition) throw new Exception("FAIL: " + name); Console.WriteLine("PASS: " + name); count++; });
+    Console.WriteLine($"All {count} starter-database checks passed.");
+    return;
+}
+if (args.FirstOrDefault() == "--database-reset-tests")
+{
+    var count = 0;
+    DatabaseResetTests.Run((condition, name) => { if (!condition) throw new Exception("FAIL: " + name); Console.WriteLine("PASS: " + name); count++; });
+    Console.WriteLine($"All {count} new-project reset checks passed.");
+    return;
+}
+if (args.FirstOrDefault() == "--reset-dialog-tests")
+{
+    var count = 0;
+    ResetDialogTests.Run((condition, name) => { if (!condition) throw new Exception("FAIL: " + name); Console.WriteLine("PASS: " + name); count++; });
+    Console.WriteLine($"All {count} new-project dialog checks passed.");
+    return;
+}
+if (args.FirstOrDefault() == "--community-response-tests")
+{
+    var count = 0;
+    CommunityResponseTests.Run((condition, name) => { if (!condition) throw new Exception("FAIL: " + name); Console.WriteLine("PASS: " + name); count++; });
+    Console.WriteLine($"All {count} community-response checks passed.");
+    return;
+}
+if (args.FirstOrDefault() == "--community-schema")
+{
+    var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
+    var settings = new ConfigurationBuilder().SetBasePath(Path.GetFullPath("ButchCrawler.App"))
+        .AddJsonFile("appsettings.json").AddJsonFile($"appsettings.{environment}.json", optional: true)
+        .AddEnvironmentVariables().Build();
+    var repository = new CommunityResponseRepository(settings.GetConnectionString("DefaultConnection")!);
+    await repository.InitializeAsync();
+    var saved = await repository.LoadAsync();
+    Console.WriteLine($"Community response schema verified: {saved.Counts.Subscriptions:N0} subscription(s), {saved.Counts.Suggestions:N0} suggestion(s).");
+    return;
+}
 if (args.FirstOrDefault() == "--sql") { await SqlIntegration.RunAsync(args[1]); return; }
 if (args.FirstOrDefault() == "--reset-sql") { await ResetIntegrationTests.RunAsync(); return; }
+if (args.FirstOrDefault() == "--starter-preview")
+{
+    var config = new ConfigurationBuilder().SetBasePath(Path.GetFullPath("ButchCrawler.App"))
+        .AddJsonFile("appsettings.json").AddEnvironmentVariables().Build();
+    var service = new StarterDatabaseService(config.GetConnectionString("DefaultConnection")!);
+    var preview = await service.PreviewAsync();
+    Console.WriteLine($"Existing seeds: {preview.ExistingSeedUrls:N0}");
+    Console.WriteLine($"Seed keywords: {preview.SeedKeywords:N0}");
+    Console.WriteLine($"Successful URLs available: {preview.Candidates.Count:N0}");
+    Console.WriteLine($"Recommended: {preview.Candidates.Count(candidate => candidate.Recommended):N0}");
+    return;
+}
 if (args.FirstOrDefault() == "--ai-sql") { await AiTests.RunSqlAsync(); return; }
 if (args.FirstOrDefault() == "--crawl-sql") { await CrawlSqlTests.RunAsync(); return; }
 if (args.FirstOrDefault() is "--install-ai-schema" or "--ai-status")
@@ -373,6 +425,7 @@ SettingsTests.Run(Check);
 ActivityTests.Run(Check);
 CollectionSearchQueryTests.Run(Check);
 ResetDialogTests.Run(Check);
+StarterDatabaseTests.Run(Check);
 var localText = new LocalTextProcessor();
 var localPlain = await localText.ProcessAsync("test.txt", Encoding.UTF8.GetBytes("Butch Cassidy and Etta Place"), null, ".txt", default);
 Check(localPlain.Text.Contains("Butch Cassidy") && CrawlerService.KeywordMatchLine("test.txt", localPlain.Text, "Etta Place") != null, "local text extraction feeds literal keyword matching");

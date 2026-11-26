@@ -7,7 +7,8 @@ public static class AppIdentity
 {
     public const string Name = "History's Web Crawler";
     public const string Author = "Tom Affholter";
-    public const string Email = "TomAffholter@outlook.com";
+    public const string Email = "HistoryCrawlerApp@gmail.com";
+    public const string Copyright = "Copyright © Tom Affholter, 2026. All rights reserved.";
     private static readonly Assembly Assembly = typeof(AppIdentity).Assembly;
 
     public static string Version => Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]

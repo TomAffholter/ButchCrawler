@@ -10,12 +10,9 @@ internal static class ResetIntegrationTests
         var settings = new ConfigurationBuilder().SetBasePath(Path.GetFullPath("ButchCrawler.App"))
             .AddJsonFile("appsettings.json").AddEnvironmentVariables().Build();
         var source = new SqlConnectionStringBuilder(settings.GetConnectionString("DefaultConnection")) { ConnectTimeout = 5 };
-        string definition;
         await using (var original = new SqlConnection(source.ConnectionString))
         {
             await original.OpenAsync();
-            using var read = original.CreateCommand(); read.CommandText = "SELECT OBJECT_DEFINITION(OBJECT_ID(N'dbo.spWipeData'))";
-            definition = (string?)await read.ExecuteScalarAsync() ?? throw new Exception("Cannot read reset procedure");
         }
         var database = "ButchCrawlerResetTest_" + Guid.NewGuid().ToString("N");
         var adminString = new SqlConnectionStringBuilder(source.ConnectionString) { InitialCatalog = "master" };
@@ -26,13 +23,17 @@ internal static class ResetIntegrationTests
         { using var command = connection.CreateCommand(); command.CommandText = sql; return Convert.ToInt64(await command.ExecuteScalarAsync()); }
         void Check(bool value, string label) { if (!value) throw new Exception("FAIL: " + label); Console.WriteLine("PASS: " + label); }
         var created = false;
+        var safetyBackups = new List<string>();
         try
         {
             await Exec(admin, $"CREATE DATABASE [{database}]"); created = true;
             var target = new SqlConnectionStringBuilder(source.ConnectionString) { InitialCatalog = database };
             await using var connection = new SqlConnection(target.ConnectionString); await connection.OpenAsync();
             await Exec(connection, @"
-CREATE TABLE dbo.SeedUrls(Id INT IDENTITY PRIMARY KEY,Url NVARCHAR(200) NOT NULL);
+CREATE TABLE dbo.SeedUrls(Id INT IDENTITY PRIMARY KEY,Url NVARCHAR(200) NOT NULL,IsActive BIT NOT NULL DEFAULT 1,
+ LastCrawledAt DATETIME2 NULL,HealthStatus NVARCHAR(32) NULL,ConsecutiveFailures INT NOT NULL DEFAULT 0,
+ FirstFailureAt DATETIME2 NULL,LastFailureAt DATETIME2 NULL,LastFailureStatus INT NULL,LastFailureReason NVARCHAR(1000) NULL,
+ NextHealthCheckAt DATETIME2 NULL,DisabledReason NVARCHAR(500) NULL,AutoDisabled BIT NOT NULL DEFAULT 0);
 CREATE TABLE dbo.SeedKeywords(Id INT IDENTITY PRIMARY KEY,Keyword NVARCHAR(200) NOT NULL,IsActive BIT NOT NULL DEFAULT 1);
 CREATE TABLE dbo.SchemaVersion(Version INT NOT NULL);
 CREATE TABLE dbo.WorkItem(Id INT IDENTITY(10,2) PRIMARY KEY,Value INT CONSTRAINT CK_Value CHECK(Value>0),KeywordId INT REFERENCES dbo.SeedKeywords(Id));
@@ -40,7 +41,9 @@ CREATE TABLE dbo.NoIdentity(Value INT NOT NULL);
 CREATE TABLE dbo.CrawlQueue(Id INT IDENTITY PRIMARY KEY,Url NVARCHAR(2000),ParentUrl NVARCHAR(2000),Depth INT,Status NVARCHAR(50) DEFAULT N'pending',Attempts INT DEFAULT 0,LastError NVARCHAR(MAX),updated_at DATETIME2,locked_until DATETIME2,LockToken UNIQUEIDENTIFIER);
 CREATE TABLE dbo.CrawlResults(Url NVARCHAR(2000),status_code INT,content NVARCHAR(MAX),created_at DATETIME2,updated_at DATETIME2);
 CREATE TABLE dbo.VisitedUrls(url NVARCHAR(2000),content_hash NVARCHAR(100));
-INSERT dbo.SeedUrls VALUES(N'https://example.test/KeepCase'); INSERT dbo.SeedKeywords(Keyword) VALUES(N'keep keyword'); INSERT dbo.SchemaVersion VALUES(11);
+INSERT dbo.SeedUrls(Url,LastCrawledAt,HealthStatus,ConsecutiveFailures,FirstFailureAt,LastFailureAt,LastFailureStatus,LastFailureReason,NextHealthCheckAt,DisabledReason,AutoDisabled,IsActive)
+VALUES(N'https://example.test/KeepCase',SYSUTCDATETIME(),N'failed',4,DATEADD(DAY,-4,SYSUTCDATETIME()),SYSUTCDATETIME(),503,N'test failure',DATEADD(DAY,1,SYSUTCDATETIME()),N'test automatic disable',1,0);
+INSERT dbo.SeedKeywords(Keyword) VALUES(N'keep keyword'); INSERT dbo.SchemaVersion VALUES(11);
 INSERT dbo.WorkItem VALUES(1,1); INSERT dbo.NoIdentity VALUES(7);");
             await Exec(connection, @"INSERT dbo.SeedKeywords(Keyword,IsActive) VALUES(N'inactive statistics fixture',0);
 INSERT dbo.CrawlQueue(Url,ParentUrl,Depth) VALUES
@@ -89,8 +92,6 @@ INSERT dbo.CrawlQueue(Url,ParentUrl,Depth) VALUES
             var partialAudio = await audioStorage.GetAudioTranscriptAsync(audio.Source, audio.ContentHash, audio.Model, default);
             Check(partialAudio is { IsComplete: false, ChunkSeconds: 600 }, "audio database retains partial-progress state and segment duration for resume");
             Check((await audioStorage.SearchAudioTranscriptsAsync("", false, default)).Count == 0, "audio library does not present unfinished transcripts as completed results");
-            // Install the actual production procedure only in this disposable database.
-            await Exec(connection, definition.Replace("DB_NAME() <> N'ButchCrawlerDB'", $"DB_NAME() <> N'{database}'"));
             var service = new DatabaseResetService(target.ConnectionString, database);
             var preview = await service.PreviewAsync(false);
             Check(preview.Single(t => t.Property == "dbo.SeedUrls").Preserved && preview.Single(t => t.Property == "dbo.SeedKeywords").Preserved && !preview.Single(t => t.Property == "dbo.WorkItem").Preserved,
@@ -99,25 +100,26 @@ INSERT dbo.CrawlQueue(Url,ParentUrl,Depth) VALUES
             try { await service.ResetAsync(false); throw new Exception("Active lease accepted"); }
             catch (SqlException ex) when (ex.Number == 51011) { Check(await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.WorkItem") == 1, "active lease blocks reset without changes"); }
             await Exec(connection, "DELETE dbo.CrawlQueue");
-            await service.ResetAsync(false);
+            var firstReset = await service.StartNewResearchProjectAsync(false); safetyBackups.Add(firstReset.BackupPath);
             var resetCounts = await statistics.LoadAsync();
             Check(resetCounts is { SeedKeywords: 1, SeedUrls: 1, DiscoveredUrls: 0 }, "About discovered total resets with crawl data while seed totals remain");
             Check(await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.AudioTranscripts") == 0, "database reset also clears audio transcripts while preserving seed tables");
             Check(await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.SeedUrls WHERE Id=1 AND Url=N'https://example.test/KeepCase'") == 1 &&
                 await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.SeedKeywords WHERE Id=1 AND Keyword=N'keep keyword'") == 1 &&
                 await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.SchemaVersion WHERE Version=11") == 1, "reset retains exact seed records and schema version");
+            Check(await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.SeedUrls WHERE LastCrawledAt IS NULL AND ConsecutiveFailures=0 AND FirstFailureAt IS NULL AND LastFailureAt IS NULL AND LastFailureStatus IS NULL AND LastFailureReason IS NULL AND NextHealthCheckAt IS NULL AND AutoDisabled=0 AND IsActive=1") == 1,
+                "reset clears seed progress and failure history and reactivates only the automatically disabled seed");
             Check(await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.WorkItem") == 0 && await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.NoIdentity") == 0, "reset clears identity and non-identity data tables");
             Check(await Scalar(connection, "SELECT COUNT_BIG(*) FROM sys.check_constraints WHERE name='CK_Value' AND is_disabled=0 AND is_not_trusted=0") == 1, "reset restores enabled trusted check constraints");
             await Exec(connection, "INSERT dbo.WorkItem VALUES(2,1); INSERT dbo.NoIdentity VALUES(9)");
             Check(await Scalar(connection, "SELECT MIN(Id) FROM dbo.WorkItem") == 10, "cleared identity restarts at original seed and increment");
-            await Exec(connection, "CREATE TRIGGER FailKeywordDelete ON dbo.SeedKeywords AFTER DELETE AS BEGIN THROW 51020, 'Intentional rollback test', 1; END");
-            try { await service.ResetAsync(true); throw new Exception("Expected keyword failure"); }
-            catch (SqlException ex) when (ex.Number == 51020)
-            { Check(await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.WorkItem") == 1 && await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.SeedKeywords") == 1, "keyword deletion failure rolls back entire reset"); }
-            await Exec(connection, "DROP TRIGGER dbo.FailKeywordDelete");
-            await service.ResetAsync(true);
+            await Exec(connection, "CREATE TRIGGER FailKeywordDelete ON dbo.SeedKeywords AFTER DELETE AS BEGIN THROW 51022, 'Trigger should be temporarily disabled', 1; END");
+            var secondReset = await service.StartNewResearchProjectAsync(true); safetyBackups.Add(secondReset.BackupPath);
             Check(await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.SeedUrls") == 1 && await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.SeedKeywords") == 0 && await Scalar(connection, "SELECT COUNT_BIG(*) FROM dbo.WorkItem") == 0,
                 "second action clears keywords and crawl data but preserves Seed URLs");
+            Check(await Scalar(connection, "SELECT COUNT_BIG(*) FROM sys.triggers WHERE name=N'FailKeywordDelete' AND is_disabled=0") == 1,
+                "reset temporarily disables delete triggers and restores their original enabled state");
+            await Exec(connection, "DROP TRIGGER dbo.FailKeywordDelete");
             await Exec(connection, "INSERT dbo.SeedKeywords(Keyword) VALUES(N'new keyword')");
             Check(await Scalar(connection, "SELECT MIN(Id) FROM dbo.SeedKeywords") == 1, "cleared keyword identity restarts at default");
             var storage = new ButchCrawler.App.SqlStorage(target.ConnectionString, Microsoft.Extensions.Logging.Abstractions.NullLogger<ButchCrawler.App.SqlStorage>.Instance);
@@ -138,6 +140,8 @@ INSERT dbo.CrawlQueue(Url,ParentUrl,Depth) VALUES
         {
             SqlConnection.ClearAllPools();
             if (created) await Exec(admin, $"ALTER DATABASE [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{database}]");
+            foreach (var backup in safetyBackups)
+                if (File.Exists(backup)) File.Delete(backup);
         }
     }
 }

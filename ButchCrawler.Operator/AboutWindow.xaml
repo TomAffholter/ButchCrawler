@@ -28,9 +28,19 @@
                 <TextBlock Text="CREATED BY" FontSize="10" FontWeight="SemiBold" Foreground="#D9B57F" Margin="0,0,0,7"/>
                 <TextBlock Text="Tom Affholter" FontSize="23" FontWeight="SemiBold" Foreground="#FFF3DA" Margin="0,0,0,10"/>
                 <TextBlock FontSize="14">
-                    <Hyperlink Name="EmailLink" NavigateUri="mailto:TomAffholter@outlook.com" Foreground="#F3CC91" RequestNavigate="Email_RequestNavigate" ToolTip="Open your email application">TomAffholter@outlook.com</Hyperlink>
+                    <Run Text="Support email: " Foreground="#D5C9B5"/>
+                    <Hyperlink Name="EmailLink" NavigateUri="mailto:HistoryCrawlerApp@gmail.com?subject=%5BHistory%20Crawler%20Question%5D%20General%20support" Foreground="#F3CC91" RequestNavigate="Email_RequestNavigate" ToolTip="Open your email application with a support subject">HistoryCrawlerApp@gmail.com</Hyperlink>
                 </TextBlock>
-                <UniformGrid Columns="3" Width="470" Margin="0,25,0,0">
+                <TextBlock Text="Copyright © Tom Affholter, 2026. All rights reserved." FontSize="11" Foreground="#D5C9B5" Margin="0,8,0,0"/>
+                <WrapPanel Margin="0,14,0,0">
+                    <Button Content="Support History Crawler" Click="Donate_Click" Padding="14,7" Margin="0,0,8,0"
+                            Background="#E8C38A" BorderBrush="#E8C38A" Foreground="#202B30" FontWeight="SemiBold"
+                            ToolTip="Open the optional contribution page"/>
+                    <Button Content="Updates, bugs &amp; suggestions" Click="SupportContact_Click" Padding="12,7"
+                            Background="#70202B30" BorderBrush="#80D9B57F" Foreground="#F3CC91"
+                            ToolTip="See the History Crawler support email choices"/>
+                </WrapPanel>
+                <UniformGrid Columns="3" Width="470" Margin="0,18,0,0">
                     <Border Background="#A6202B30" BorderBrush="#55D9B57F" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,8,0">
                         <StackPanel><TextBlock Text="Seed Keywords" FontSize="10.5" Foreground="#D5C9B5"/><TextBlock Name="SeedKeywordCountText" Text="…" FontSize="24" FontWeight="SemiBold" Foreground="#FFF3DA" Margin="0,5,0,0"/></StackPanel>
                     </Border>

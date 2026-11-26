@@ -32,15 +32,26 @@ namespace ButchCrawler.App
             {
                 using var conn = new SqlConnection(_connectionString);
                 await conn.OpenAsync().ConfigureAwait(false);
+                var compressed = await HasCompressedHtmlSchemaAsync(conn).ConfigureAwait(false);
+                using var transaction = compressed ? conn.BeginTransaction() : null;
+                var blobId = transaction is not null
+                    ? await StoreCrawlHtmlBlobAsync(conn, transaction, rawHtml).ConfigureAwait(false)
+                    : null;
+
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = @"
-MERGE dbo.CrawlArtifacts AS target
+                cmd.Transaction = transaction;
+                var blobUpdate = compressed ? "RawHtmlBlobId = @blobId," : "";
+                var blobColumn = compressed ? ", RawHtmlBlobId" : "";
+                var blobValue = compressed ? ", @blobId" : "";
+                cmd.CommandText = $@"
+MERGE dbo.CrawlArtifacts WITH (HOLDLOCK) AS target
 USING (SELECT @url AS Url) AS src
     ON target.Url = src.Url
 WHEN MATCHED THEN
     UPDATE SET FinalUrl = @finalUrl,
                Title = @title,
                RawHtml = @rawHtml,
+               {blobUpdate}
                JsonLd = @jsonLd,
                OpenGraphJson = @openGraph,
                MicroformatsJson = @microformats,
@@ -56,13 +67,14 @@ WHEN MATCHED THEN
                RetrievedAt = @retrievedAt,
                UpdatedAt = SYSUTCDATETIME()
 WHEN NOT MATCHED THEN
-    INSERT (Url, FinalUrl, Title, RawHtml, JsonLd, OpenGraphJson, MicroformatsJson, OutgoingLinksJson, ContentHash, FetchHeadersJson, RedirectChainJson, StatusCode, UserAgent, RemoteIp, Asn, Source, RetrievedAt, CreatedAt)
-    VALUES (@url, @finalUrl, @title, @rawHtml, @jsonLd, @openGraph, @microformats, @outgoingLinks, @contentHash, @fetchHeaders, @redirectChain, @statusCode, @userAgent, @remoteIp, @asn, @source, @retrievedAt, SYSUTCDATETIME());
+    INSERT (Url, FinalUrl, Title, RawHtml, JsonLd, OpenGraphJson, MicroformatsJson, OutgoingLinksJson, ContentHash, FetchHeadersJson, RedirectChainJson, StatusCode, UserAgent, RemoteIp, Asn, Source, RetrievedAt, CreatedAt{blobColumn})
+    VALUES (@url, @finalUrl, @title, @rawHtml, @jsonLd, @openGraph, @microformats, @outgoingLinks, @contentHash, @fetchHeaders, @redirectChain, @statusCode, @userAgent, @remoteIp, @asn, @source, @retrievedAt, SYSUTCDATETIME(){blobValue});
 ";
                 cmd.Parameters.AddWithValue("@url", url);
                 cmd.Parameters.AddWithValue("@finalUrl", (object?)finalUrl ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@title", (object?)title ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@rawHtml", (object?)rawHtml ?? DBNull.Value);
+                cmd.Parameters.Add("@rawHtml", SqlDbType.NVarChar, -1).Value = compressed ? DBNull.Value : (object?)rawHtml ?? DBNull.Value;
+                if (compressed) cmd.Parameters.Add("@blobId", SqlDbType.BigInt).Value = (object?)blobId ?? DBNull.Value;
                 cmd.Parameters.AddWithValue("@jsonLd", (object?)jsonLd ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@openGraph", (object?)openGraphJson ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@microformats", (object?)microformatsJson ?? DBNull.Value);
@@ -78,6 +90,7 @@ WHEN NOT MATCHED THEN
                 cmd.Parameters.AddWithValue("@retrievedAt", retrievedAtUtc);
 
                 await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                if (transaction is not null) await transaction.CommitAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {

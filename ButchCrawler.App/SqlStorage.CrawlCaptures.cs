@@ -75,19 +75,29 @@ ORDER BY RetrievedAt DESC, Id DESC;
                 }
             }
 
+            var compressed = string.Equals(captureType, "html", StringComparison.OrdinalIgnoreCase) &&
+                await HasCompressedHtmlSchemaAsync(conn).ConfigureAwait(false);
+            using var transaction = compressed ? conn.BeginTransaction() : null;
+            var blobId = transaction is not null
+                ? await StoreCrawlHtmlBlobAsync(conn, transaction, bodyTextFull).ConfigureAwait(false)
+                : null;
+
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
+            cmd.Transaction = transaction;
+            var blobColumn = compressed ? ", RawHtmlBlobId" : "";
+            var blobValue = compressed ? ", @blobId" : "";
+            cmd.CommandText = $@"
 INSERT INTO dbo.CrawlCaptures
 (
     Url, FinalUrl, CaptureType, StatusCode, BodyText, BodyTextFull, Title,
     ContentHash, ETag, LastModified, WasNotModified,
-    UserAgent, RemoteIp, Asn, Source, RetrievedAt
+    UserAgent, RemoteIp, Asn, Source, RetrievedAt{blobColumn}
 )
 VALUES
 (
     @url, @finalUrl, @captureType, @statusCode, @bodyText, @bodyTextFull, @title,
     @contentHash, @etag, @lastModified, @wasNotModified,
-    @userAgent, @remoteIp, @asn, @source, @retrievedAt
+    @userAgent, @remoteIp, @asn, @source, @retrievedAt{blobValue}
 );
 SELECT CAST(SCOPE_IDENTITY() AS BIGINT);
 ";
@@ -97,7 +107,8 @@ SELECT CAST(SCOPE_IDENTITY() AS BIGINT);
             cmd.Parameters.AddWithValue("@captureType", (object?)captureType ?? "http");
             cmd.Parameters.AddWithValue("@statusCode", (object?)statusCode ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@bodyText", (object?)bodyText ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@bodyTextFull", (object?)bodyTextFull ?? DBNull.Value);
+            cmd.Parameters.Add("@bodyTextFull", SqlDbType.NVarChar, -1).Value = compressed ? DBNull.Value : (object?)bodyTextFull ?? DBNull.Value;
+            if (compressed) cmd.Parameters.Add("@blobId", SqlDbType.BigInt).Value = (object?)blobId ?? DBNull.Value;
             cmd.Parameters.AddWithValue("@title", (object?)title ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@contentHash", (object?)contentHash ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@etag", (object?)etag ?? DBNull.Value);
@@ -110,6 +121,7 @@ SELECT CAST(SCOPE_IDENTITY() AS BIGINT);
             cmd.Parameters.AddWithValue("@retrievedAt", retrievedAtUtc);
 
             var idObj = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
+            if (transaction is not null) await transaction.CommitAsync().ConfigureAwait(false);
             return idObj == null || idObj == DBNull.Value ? 0 : Convert.ToInt64(idObj);
         }
 

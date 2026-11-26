@@ -92,6 +92,13 @@ public partial class MainWindow : Window
         SettingsMenu.ContextMenu.IsOpen = true;
     }
 
+    private void SupportMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (SupportMenu.ContextMenu is null) return;
+        SupportMenu.ContextMenu.PlacementTarget = SupportMenu;
+        SupportMenu.ContextMenu.IsOpen = true;
+    }
+
     private async void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         if (_exitApproved) return;
@@ -119,11 +126,14 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string? FindAppDirectory()
+    public static string? FindAppDirectory()
     {
         var locations = new[] { Environment.CurrentDirectory, AppContext.BaseDirectory };
         foreach (var location in locations)
         {
+            if (File.Exists(Path.Combine(location, "appsettings.json")) &&
+                (File.Exists(Path.Combine(location, "ButchCrawler.App.dll")) || File.Exists(Path.Combine(location, "ButchCrawler.App.exe"))))
+                return Path.GetFullPath(location);
             var current = new DirectoryInfo(location);
             for (var i = 0; i < 8 && current != null; i++, current = current.Parent)
             {
@@ -147,17 +157,26 @@ public partial class MainWindow : Window
             _processedTypes.Clear();
             _localFilesProcessed = _localFilesTotal = null;
             RefreshCounters();
-            var dllPath = Path.Combine(_appDir, "bin", BuildConfiguration, "net8.0", "ButchCrawler.App.dll");
-            if (!File.Exists(dllPath))
+            var installedExecutable = Path.Combine(_appDir, "ButchCrawler.App.exe");
+            var installedDll = Path.Combine(_appDir, "ButchCrawler.App.dll");
+            var dllPath = File.Exists(installedDll)
+                ? installedDll
+                : Path.Combine(_appDir, "bin", BuildConfiguration, "net8.0", "ButchCrawler.App.dll");
+            if (!File.Exists(installedExecutable) && !File.Exists(dllPath))
                 throw new FileNotFoundException($"Crawler not built for {BuildConfiguration}. Build the entire solution in Visual Studio.", dllPath);
             _process?.Dispose();
             _crawlerReady = false;
             _startupFailureSummary = null;
             var dotnetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet", "dotnet.exe");
-            if (!File.Exists(dotnetPath)) throw new FileNotFoundException("The trusted .NET runtime was not found under Program Files.", dotnetPath);
-            _process = new Process { StartInfo = new ProcessStartInfo(dotnetPath)
+            if (!File.Exists(installedExecutable) && !File.Exists(dotnetPath))
+                throw new FileNotFoundException("The trusted .NET runtime was not found under Program Files.", dotnetPath);
+            var launchFile = File.Exists(installedExecutable) ? installedExecutable : dotnetPath;
+            var launchArguments = File.Exists(installedExecutable)
+                ? "--Operator:Controlled=true"
+                : $"\"{dllPath}\" --Operator:Controlled=true";
+            _process = new Process { StartInfo = new ProcessStartInfo(launchFile)
             {
-                Arguments = $"\"{dllPath}\" --Operator:Controlled=true",
+                Arguments = launchArguments,
                 WorkingDirectory = _appDir,
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -191,7 +210,7 @@ public partial class MainWindow : Window
     {
         StartButton.IsEnabled = !running && !string.IsNullOrEmpty(_appDir);
         StopButton.IsEnabled = running;
-        SeedUrlsMenuItem.IsEnabled = ProblemSeedsMenuItem.IsEnabled = HistoricalNewspapersMenuItem.IsEnabled = KeywordsMenuItem.IsEnabled = !running && !string.IsNullOrEmpty(_appDir);
+        SeedUrlsMenuItem.IsEnabled = ProblemSeedsMenuItem.IsEnabled = HistoricalNewspapersMenuItem.IsEnabled = KeywordsMenuItem.IsEnabled = NewResearchProjectMenuItem.IsEnabled = StarterDatabaseMenuItem.IsEnabled = !running && !string.IsNullOrEmpty(_appDir);
         StatusText.Text = running ? "Crawler Running" : "Crawler stopped";
         StatusText.Foreground = new SolidColorBrush(running ? Color.FromRgb(20, 85, 190) : Color.FromRgb(180, 35, 45));
         CrawlerStatusBadge.Background = new SolidColorBrush(running ? Color.FromRgb(233, 242, 255) : Color.FromRgb(255, 240, 240));
@@ -210,7 +229,7 @@ public partial class MainWindow : Window
     {
         StartButton.IsEnabled = false;
         StopButton.IsEnabled = true;
-        SeedUrlsMenuItem.IsEnabled = ProblemSeedsMenuItem.IsEnabled = HistoricalNewspapersMenuItem.IsEnabled = KeywordsMenuItem.IsEnabled = false;
+        SeedUrlsMenuItem.IsEnabled = ProblemSeedsMenuItem.IsEnabled = HistoricalNewspapersMenuItem.IsEnabled = KeywordsMenuItem.IsEnabled = NewResearchProjectMenuItem.IsEnabled = StarterDatabaseMenuItem.IsEnabled = false;
         StatusText.Text = "Starting crawler…";
         StatusText.Foreground = new SolidColorBrush(Color.FromRgb(166, 83, 6));
         CrawlerStatusBadge.Background = new SolidColorBrush(Color.FromRgb(255, 247, 225));
@@ -224,7 +243,7 @@ public partial class MainWindow : Window
     {
         StartButton.IsEnabled = !string.IsNullOrEmpty(_appDir);
         StopButton.IsEnabled = false;
-        SeedUrlsMenuItem.IsEnabled = ProblemSeedsMenuItem.IsEnabled = HistoricalNewspapersMenuItem.IsEnabled = KeywordsMenuItem.IsEnabled = !string.IsNullOrEmpty(_appDir);
+        SeedUrlsMenuItem.IsEnabled = ProblemSeedsMenuItem.IsEnabled = HistoricalNewspapersMenuItem.IsEnabled = KeywordsMenuItem.IsEnabled = NewResearchProjectMenuItem.IsEnabled = StarterDatabaseMenuItem.IsEnabled = !string.IsNullOrEmpty(_appDir);
         StatusText.Text = "Crawler could not start";
         StatusText.Foreground = new SolidColorBrush(Color.FromRgb(180, 35, 45));
         CrawlerStatusBadge.Background = new SolidColorBrush(Color.FromRgb(255, 240, 240));
@@ -434,7 +453,30 @@ public partial class MainWindow : Window
         catch { MessageBox.Show(this, "Could not open settings. Check that appsettings.json exists and contains valid JSON.", "Settings"); }
     }
 
+    private void FirstRunSetup_Click(object sender, RoutedEventArgs e)
+    {
+        if (_process is { HasExited: false })
+        {
+            MessageBox.Show(this, "Stop the crawler before changing first-time setup choices.", "First-time setup");
+            return;
+        }
+        try
+        {
+            new FirstRunSetupWindow(Path.Combine(_appDir, "appsettings.json")) { Owner = this }.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "First-time setup", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void About_Click(object sender, RoutedEventArgs e) => new AboutWindow(Path.Combine(_appDir, "appsettings.json")) { Owner = this }.ShowDialog();
+
+    private void Donation_Click(object sender, RoutedEventArgs e) =>
+        new DonationWindow(Path.Combine(_appDir, "appsettings.json")) { Owner = this }.ShowDialog();
+
+    private void SupportContact_Click(object sender, RoutedEventArgs e) =>
+        new SupportContactWindow { Owner = this }.ShowDialog();
 
     private void Billing_Click(object sender, RoutedEventArgs e)
     {
@@ -495,6 +537,77 @@ public partial class MainWindow : Window
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Problem seeds"); }
     }
     private void Keywords_Click(object sender, RoutedEventArgs e) => OpenSeeds(true);
+
+    private async void NewResearchProject_Click(object sender, RoutedEventArgs e)
+    {
+        if (_process is { HasExited: false })
+        {
+            MessageBox.Show(this, "Stop the crawler before starting a new research project.", "New research project");
+            return;
+        }
+        try
+        {
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
+            var config = new ConfigurationBuilder().SetBasePath(_appDir)
+                .AddJsonFile("appsettings.json", optional: false)
+                .AddJsonFile($"appsettings.{environment}.json", optional: true)
+                .AddEnvironmentVariables().Build();
+            try
+            {
+                var connection = config.GetConnectionString("DefaultConnection")
+                    ?? throw new InvalidOperationException("Missing DefaultConnection connection string.");
+                var reset = new DatabaseResetWindow(new DatabaseResetService(connection), () => _process is { HasExited: false }) { Owner = this };
+                reset.ShowDialog();
+                if (!reset.ResetCompleted) return;
+
+                ActivityLog.Clear(OutputText);
+                ActivityLog.Clear(UrlOutputText);
+                ActivityLog.Clear(KeywordOutputText);
+                _urlStarts = _responses = _retrievedPages = _queuedLinks = _matchEvents = _errors = _failedAttempts = _retryCount = 0;
+                _processedTypes.Clear();
+                _localFilesProcessed = _localFilesTotal = null;
+                CurrentUrlText.Text = "Current URL: —";
+                await RefreshSavedSeedProgressAsync();
+                RefreshCounters();
+            }
+            finally { (config as IDisposable)?.Dispose(); }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "New research project", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void StarterDatabase_Click(object sender, RoutedEventArgs e)
+    {
+        if (_process is { HasExited: false })
+        {
+            MessageBox.Show(this, "Stop the crawler before preparing a starter database.", "Prepare starter database");
+            return;
+        }
+        try
+        {
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
+            var config = new ConfigurationBuilder().SetBasePath(_appDir)
+                .AddJsonFile("appsettings.json", optional: false)
+                .AddJsonFile($"appsettings.{environment}.json", optional: true)
+                .AddEnvironmentVariables().Build();
+            try
+            {
+                var connection = config.GetConnectionString("DefaultConnection")
+                    ?? throw new InvalidOperationException("Missing DefaultConnection connection string.");
+                new StarterDatabaseWindow(new StarterDatabaseService(connection), () => _process is { HasExited: false })
+                {
+                    Owner = this
+                }.ShowDialog();
+            }
+            finally { (config as IDisposable)?.Dispose(); }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Prepare starter database", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     private void OpenSeeds(bool keywords)
     {

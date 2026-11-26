@@ -92,6 +92,12 @@ public partial class AboutWindow : Window
 
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();
 
+    private void Donate_Click(object sender, RoutedEventArgs e) =>
+        new DonationWindow(_settingsPath) { Owner = this }.ShowDialog();
+
+    private void SupportContact_Click(object sender, RoutedEventArgs e) =>
+        new SupportContactWindow { Owner = this }.ShowDialog();
+
     private void RefreshBilling_Click(object sender, RoutedEventArgs e) => AiBillingStatusText.Text = ButchCrawler.App.OpenAiBilling.Status;
     private void Account_RequestNavigate(object sender, RequestNavigateEventArgs e)
     {

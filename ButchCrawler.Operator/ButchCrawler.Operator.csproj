@@ -21,5 +21,13 @@
     <None Remove="Assets\western-about-collage.png" />
     <PackageReference Include="MimeKit" Version="4.18.2" />
     <Resource Include="Assets\western-about-collage.png" />
+    <Content Include="..\ButchCrawler.App\appsettings.json" Link="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <None Update="HistoryCrawler.FirstRun">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </None>
   </ItemGroup>
 </Project>

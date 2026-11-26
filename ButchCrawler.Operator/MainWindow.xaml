@@ -28,6 +28,9 @@
         <MenuItem Header="Application settings…" Click="Config_Click">
             <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M1,3 H15 M1,8 H15 M1,13 H15 M5,1 V5 M11,6 V10 M6,11 V15"/></MenuItem.Icon>
         </MenuItem>
+        <MenuItem Header="First-time setup guide…" Click="FirstRunSetup_Click">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M8,1 A7,7 0 1 1 8,15 A7,7 0 1 1 8,1 M5,7 L7,9 L11,5 M8,11 V13"/></MenuItem.Icon>
+        </MenuItem>
         <Separator/>
         <MenuItem Name="SeedUrlsMenuItem" Header="Seed URLs…" Click="SeedUrls_Click">
             <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M6,10 L10,6 M5,7 L3,9 C1,11 1,13 3,14 C5,15 7,14 8,12 L9,11 M7,5 L8,4 C10,2 12,1 14,3 C16,5 14,7 13,8 L11,10"/></MenuItem.Icon>
@@ -41,6 +44,15 @@
         <MenuItem Name="KeywordsMenuItem" Header="Seed keywords…" Click="Keywords_Click">
             <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M1,1 H8 L15,8 L8,15 L1,8 Z M5,4 A1,1 0 1 0 5,6 A1,1 0 1 0 5,4"/></MenuItem.Icon>
         </MenuItem>
+        <Separator/>
+        <MenuItem Name="NewResearchProjectMenuItem" Header="Start a new research project…" Click="NewResearchProject_Click"
+                  ToolTip="Create a verified backup, keep every Seed URL, and clear prior research data.">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M8,1 V15 M1,8 H15 M3,3 L13,13 M13,3 L3,13"/></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Name="StarterDatabaseMenuItem" Header="Prepare clean starter database…" Click="StarterDatabase_Click"
+                  ToolTip="Create a separate verified installer database without changing the working database.">
+            <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M2,3 C2,1 14,1 14,3 V12 C14,14 2,14 2,12 Z M2,3 C2,5 14,5 14,3 M2,7 C2,9 14,9 14,7 M10,11 L12,13 L16,9"/></MenuItem.Icon>
+        </MenuItem>
         <MenuItem Header="OpenAI key…" Click="OpenAiKey_Click">
             <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M8,6 A3,3 0 1 1 2,6 A3,3 0 1 1 8,6 Z M8,6 H16 M12,6 V10 M15,6 V9"/></MenuItem.Icon>
         </MenuItem>
@@ -52,6 +64,17 @@
         <MenuItem Name="ExitMenuItem" Header="E_xit" Click="Exit_Click" InputGestureText="Alt+F4">
             <MenuItem.Icon><Path Style="{StaticResource MenuIcon}" Data="M7,1 H2 V15 H7 M6,8 H16 M12,4 L16,8 L12,12"/></MenuItem.Icon>
         </MenuItem>
+    </ContextMenu>
+    </Button.ContextMenu>
+</Button>
+<Button Name="SupportMenu" Content="Support ▼" FontSize="16" Padding="16,10" Margin="10,0,0,8" Click="SupportMenu_Click">
+    <Button.ContextMenu>
+    <ContextMenu FontSize="16" Placement="Bottom">
+        <ContextMenu.Resources><Style TargetType="MenuItem"><Setter Property="FontSize" Value="16"/><Setter Property="Padding" Value="13,10"/></Style></ContextMenu.Resources>
+        <MenuItem Header="Make an optional donation…" Click="Donation_Click"/>
+        <Separator/>
+        <MenuItem Header="Updates, bugs, and suggestions…" Click="SupportContact_Click"
+                  ToolTip="See how to email History Crawler about updates, bugs, or suggestions."/>
     </ContextMenu>
     </Button.ContextMenu>
 </Button>

@@ -79,6 +79,8 @@ internal static class UiPreview
                 Render(about, Path.Combine(destination, "about.png"));
                 ((TextBlock)typeof(AboutWindow).GetField("AiBillingStatusText",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(about)!).Text = "Last API billing notice: OpenAI API credits have run out. Add credits in API billing. This request will not be retried automatically.\nObserved just now";
                 Render(about,Path.Combine(destination,"about-billing-warning.png"));
+                Render(new DonationWindow(null), Path.Combine(destination, "support-donation.png"));
+                Render(new SupportContactWindow(), Path.Combine(destination, "support-contact.png"));
                 ((Border)typeof(MainWindow).GetField("BillingNotice",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(main)!).Visibility=Visibility.Visible;
                 ((TextBlock)typeof(MainWindow).GetField("BillingNoticeText",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(main)!).Text="OpenAI API credits have run out. Add credits in API billing. This request will not be retried automatically.";
                 Render(main,Path.Combine(destination,"operator-billing-warning.png"));
@@ -98,12 +100,13 @@ internal static class UiPreview
                 ((TextBlock)typeof(ProblemSeedsWindow).GetField("_busyText", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(problemSeeds)!).Text = "Retrying URL and reloading problem URLs…";
                 ((Border)typeof(ProblemSeedsWindow).GetField("_busyPanel", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(problemSeeds)!).Visibility = Visibility.Visible;
                 Render(problemSeeds, Path.Combine(destination, "problem-seeds-loading.png"));
-                var reset = new DatabaseResetWindow(new DatabaseResetService(""), false, () => false);
+                var reset = new DatabaseResetWindow(new DatabaseResetService(""), () => false);
                 ((DockPanel)reset.Content).Children.OfType<DataGrid>().Single().ItemsSource = new[]
                 { new ResetTable("dbo.CrawlQueue", 1200, false), new ResetTable("dbo.CrawlResults", 500, false),
                   new ResetTable("dbo.SchemaVersion", 11, true), new ResetTable("dbo.SeedKeywords", 75, true), new ResetTable("dbo.SeedUrls", 78057, true) };
                 Render(reset, Path.Combine(destination, "reset-keep-seeds.png"));
-                var resetKeywords = new DatabaseResetWindow(new DatabaseResetService(""), true, () => false);
+                var resetKeywords = new DatabaseResetWindow(new DatabaseResetService(""), () => false);
+                ((RadioButton)typeof(DatabaseResetWindow).GetField("_clearKeywords", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(resetKeywords)!).IsChecked = true;
                 ((DockPanel)resetKeywords.Content).Children.OfType<DataGrid>().Single().ItemsSource = new[]
                 { new ResetTable("dbo.CrawlQueue", 1200, false), new ResetTable("dbo.CrawlResults", 500, false),
                   new ResetTable("dbo.SchemaVersion", 11, true), new ResetTable("dbo.SeedKeywords", 75, false), new ResetTable("dbo.SeedUrls", 78057, true) };
